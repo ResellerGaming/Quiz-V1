@@ -1,0 +1,192 @@
+<!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Teka-Teki Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(ellipse at center, #1a1a1a 0%, #000000 100%);
+      color: white;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+      animation: fadeIn 2s ease-out;
+    }
+    h1, h2 {
+      font-size: 2.5rem;
+      color: #ff0000;
+      text-shadow: 0 0 10px #ff0000;
+    }
+    .start-screen, .quiz-screen, .leaderboard-screen {
+      display: none;
+      animation: fadeIn 1s ease-in-out;
+    }
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 10px;
+      background-color: #ff0000;
+      color: white;
+      cursor: pointer;
+      margin-top: 1rem;
+      box-shadow: 0 0 10px #ff0000;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: scale(1.1);
+    }
+    .question {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      animation: pulse 1s infinite alternate;
+    }
+    .choices button {
+      display: block;
+      margin: 0.5rem auto;
+      background-color: #333;
+      box-shadow: 0 0 5px #fff;
+    }
+    .leaderboard-screen {
+      background: linear-gradient(#000000, #220000);
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 0 15px #ff0000;
+    }
+    .leaderboard {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      border-radius: 10px;
+    }
+    .congrats {
+      font-size: 2rem;
+      color: gold;
+      margin-bottom: 1rem;
+      animation: glow 2s infinite alternate;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    @keyframes pulse {
+      from {transform: scale(1);}
+      to {transform: scale(1.05);}
+    }
+    @keyframes glow {
+      from {text-shadow: 0 0 5px gold;}
+      to {text-shadow: 0 0 20px gold, 0 0 10px orange;}
+    }
+  </style>
+</head>
+<body>
+  <audio id="bgm" src="https://www.myinstants.com/media/sounds/8-bit-powerup.mp3" loop autoplay></audio>
+  <audio id="correctSound" src="https://www.myinstants.com/media/sounds/correct.mp3"></audio>
+  <audio id="wrongSound" src="https://www.myinstants.com/media/sounds/wrong-answer.mp3"></audio>  <div class="container">
+    <div class="start-screen">
+      <h1>Quiz Teka-Teki</h1>
+      <input type="text" id="username" placeholder="Masukkan Nama Kamu">
+      <br>
+      <button onclick="startQuiz()">Mulai</button>
+    </div><div class="quiz-screen">
+  <div class="question"></div>
+  <div class="choices"></div>
+</div>
+
+<div class="leaderboard-screen">
+  <div class="congrats">🎉 Selamat! 🎉</div>
+  <h2>Papan Peringkat Kejuaraan</h2>
+  <div class="leaderboard"></div>
+</div>
+
+  </div>  <script>
+    const questions = [
+      { q: 'Aku bukan selimut, tapi bisa menutupi tanah dan turun dari langit. Apa aku?', a: 'Salju', c: ['Pasir', 'Hujan', 'Salju', 'Lava'] },
+      { q: 'Aku mudah diangkat tapi susah dilempar. Apa aku?', a: 'Bulu', c: ['Daun', 'Bulu', 'Ranting', 'Kertas'] },
+      { q: 'Angka Apa Yang Paling Besar?', a: '9', c: ['100', '250', '9', '999'] },
+      { q: 'Warna campuran merah dan hijau adalah?', a: 'Kuning', c: ['Coklat', 'Kuning', 'Hijau', 'Hitam'] },
+      { q: 'Pohon tumbuh dua kali lipat setiap tahun selama 10 tahun. Kapan tingginya setengah?', a: 'Tahun ke-9', c: ['Tahun ke-2', 'Tahun ke-5', 'Tahun ke-7', 'Tahun ke-9'] },
+      { q: 'Hewan tercepat di darat?', a: 'Cheetah', c: ['Singa', 'Cheetah', 'Kuda', 'Anjing'] },
+      { q: 'Angka Romawi untuk 10?', a: 'X', c: ['V', 'X', 'L', 'I'] },
+      { q: 'Bulan keempat dalam kalender Masehi?', a: 'April', c: ['Juli', 'April', 'Mei', 'Maret'] },
+      { q: 'Planet terdekat dengan matahari?', a: 'Merkurius', c: ['Venus', 'Bumi', 'Merkurius', 'Mars'] },
+      { q: 'Ikan Apa Paling Mahal?', a: 'Ikan Emas', c: ['Ikan Lele', 'Ikan Cupang', 'Ikan Nila', 'Ikan Emas'] }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let username = '';
+
+    const startScreen = document.querySelector('.start-screen');
+    const quizScreen = document.querySelector('.quiz-screen');
+    const leaderboardScreen = document.querySelector('.leaderboard-screen');
+    const questionEl = document.querySelector('.question');
+    const choicesEl = document.querySelector('.choices');
+    const leaderboardEl = document.querySelector('.leaderboard');
+    const correctSound = document.getElementById('correctSound');
+    const wrongSound = document.getElementById('wrongSound');
+
+    async function startQuiz() {
+      username = document.getElementById('username').value.trim();
+      if (!username) return alert('Masukkan nama kamu!');
+      startScreen.style.display = 'none';
+      quizScreen.style.display = 'block';
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      const q = questions[current];
+      questionEl.textContent = q.q;
+      choicesEl.innerHTML = '';
+      q.c.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice);
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(answer) {
+      if (answer === questions[current].a) {
+        score++;
+        correctSound.play();
+      } else {
+        wrongSound.play();
+      }
+      current++;
+      setTimeout(() => {
+        if (current < questions.length) {
+          loadQuestion();
+        } else {
+          endQuiz();
+        }
+      }, 500);
+    }
+
+    async function endQuiz() {
+      quizScreen.style.display = 'none';
+      leaderboardScreen.style.display = 'block';
+      await saveToServer(username, score);
+      const data = await getLeaderboard();
+      leaderboardEl.innerHTML = data.map(p => `<p>${p.name}: ${p.score}</p>`).join('');
+    }
+
+    function saveToServer(name, score) {
+      const existing = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+      existing.push({ name, score });
+      localStorage.setItem('leaderboard', JSON.stringify(existing));
+    }
+
+    function getLeaderboard() {
+      const data = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+      return data.sort((a, b) => b.score - a.score).slice(0, 10);
+    }
+
+    startScreen.style.display = 'block';
+  </script></body>
+</html>
